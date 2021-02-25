@@ -249,12 +249,18 @@ func (rb *Bitmap) String() string {
 // Iterator creates a new IntPeekable to iterate over the integers contained in the bitmap, in sorted order;
 // the iterator becomes invalid if the bitmap is modified (e.g., with Add or Remove).
 func (rb *Bitmap) Iterator() IntPeekable64 {
+	if rb == nil {
+		return newIntIterator(NewBitmap())
+	}
 	return newIntIterator(rb)
 }
 
 // ReverseIterator creates a new IntIterable to iterate over the integers contained in the bitmap, in sorted order;
 // the iterator becomes invalid if the bitmap is modified (e.g., with Add or Remove).
 func (rb *Bitmap) ReverseIterator() IntIterable64 {
+	if rb == nil {
+		return newIntReverseIterator(NewBitmap())
+	}
 	return newIntReverseIterator(rb)
 }
 
@@ -267,6 +273,9 @@ func (rb *Bitmap) ManyIterator() ManyIntIterable64 {
 // Clone creates a copy of the Bitmap
 func (rb *Bitmap) Clone() *Bitmap {
 	ptr := new(Bitmap)
+	if rb == nil {
+		return ptr
+	}
 	ptr.highlowcontainer = *rb.highlowcontainer.clone()
 	return ptr
 }
@@ -366,11 +375,17 @@ func (rb *Bitmap) CheckedRemove(x uint64) bool {
 
 // IsEmpty returns true if the Bitmap is empty (it is faster than doing (GetCardinality() == 0))
 func (rb *Bitmap) IsEmpty() bool {
+	if rb == nil {
+		return true
+	}
 	return rb.highlowcontainer.size() == 0
 }
 
 // GetCardinality returns the number of integers contained in the bitmap
 func (rb *Bitmap) GetCardinality() uint64 {
+	if rb == nil {
+		return 0
+	}
 	size := uint64(0)
 	for _, c := range rb.highlowcontainer.containers {
 		size += c.GetCardinality()
