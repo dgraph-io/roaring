@@ -658,12 +658,18 @@ func (rb *Bitmap) CheckedRemove(x uint32) bool {
 
 // IsEmpty returns true if the Bitmap is empty (it is faster than doing (GetCardinality() == 0))
 func (rb *Bitmap) IsEmpty() bool {
+	if rb == nil {
+		return true
+	}
 	return rb.highlowcontainer.size() == 0
 }
 
 // GetCardinality returns the number of integers contained in the bitmap
 func (rb *Bitmap) GetCardinality() uint64 {
 	size := uint64(0)
+	if rb == nil {
+		return size
+	}
 	for _, c := range rb.highlowcontainer.containers {
 		size += uint64(c.getCardinality())
 	}
