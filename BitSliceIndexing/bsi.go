@@ -1,11 +1,12 @@
 package roaring
 
 import (
-	"github.com/RoaringBitmap/roaring"
 	"math/bits"
 	"runtime"
 	"sync"
 	"sync/atomic"
+
+	"github.com/dgraph-io/roaring"
 )
 
 // BSI is at its simplest is an array of bitmaps that represent an encoded

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/RoaringBitmap/roaring"
+	"github.com/dgraph-io/roaring"
 	"github.com/stretchr/testify/assert"
 	"github.com/willf/bitset"
 )
@@ -123,7 +123,7 @@ func TestRoaringBitmapAddMany(t *testing.T) {
 	assert.EqualValues(t, len(array), bmp.GetCardinality())
 }
 
-// https://github.com/RoaringBitmap/roaring/issues/64
+// https://github.com/dgraph-io/roaring/issues/64
 func TestFlip64(t *testing.T) {
 	bm := New()
 	bm.AddInt(0)

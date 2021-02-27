@@ -1,7 +1,7 @@
 package roaring64
 
 import (
-	"github.com/RoaringBitmap/roaring"
+	"github.com/dgraph-io/roaring"
 )
 
 // IntIterable64 allows you to iterate over the values in a Bitmap
