@@ -1,8 +1,9 @@
 package roaring_test
 
 import (
-	"github.com/RoaringBitmap/roaring"
 	"testing"
+
+	"github.com/dgraph-io/roaring"
 )
 
 func TestSelectAfterOptimize(t *testing.T) {
