@@ -139,6 +139,35 @@ func benchmarkRealDataAggregate(b *testing.B, aggregator func(b []*Bitmap) uint6
 	}
 }
 
+func benchmarkRealDataAggregateSerial(b *testing.B, aggregator func(b [][]byte) uint64) {
+	if !benchRealData {
+		b.SkipNow()
+	}
+
+	for _, dataset := range realDatasets {
+		b.Run(dataset, func(b *testing.B) {
+			bitmaps, err := retrieveRealDataBitmaps(dataset, true)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			var bbytes [][]byte
+			for _, bm := range bitmaps {
+				bb, err := bm.ToBytes()
+				if err != nil {
+					b.Fatal(err)
+				}
+				bbytes = append(bbytes, bb)
+			}
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				aggregator(bbytes)
+			}
+		})
+	}
+}
+
 func BenchmarkRealDataNext(b *testing.B) {
 	benchmarkRealDataAggregate(b, func(bitmaps []*Bitmap) uint64 {
 		tot := uint64(0)
@@ -178,5 +207,18 @@ func BenchmarkRealDataParOr(b *testing.B) {
 func BenchmarkRealDataFastOr(b *testing.B) {
 	benchmarkRealDataAggregate(b, func(bitmaps []*Bitmap) uint64 {
 		return FastOr(bitmaps...).GetCardinality()
+	})
+}
+
+func BenchmarkRealDataFastOrSerial(b *testing.B) {
+	benchmarkRealDataAggregateSerial(b, func(bitmaps [][]byte) uint64 {
+		_ = FastOrSerial(bitmaps...)
+		return 0
+	})
+}
+
+func BenchmarkRealDataFastAnd(b *testing.B) {
+	benchmarkRealDataAggregate(b, func(bitmaps []*Bitmap) uint64 {
+		return FastAnd(bitmaps...).GetCardinality()
 	})
 }
