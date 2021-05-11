@@ -3,10 +3,11 @@ package roaring
 import (
 	"bytes"
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"math/rand"
 	"runtime"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/willf/bitset"
 )
@@ -163,6 +164,7 @@ func BenchmarkIntersectionRoaring(b *testing.B) {
 		s3 := And(s1, s2)
 		card = card + s3.GetCardinality()
 	}
+	b.Logf("card: %d\n", card)
 }
 
 // go test -bench BenchmarkIntersectionCardinalityRoaring -run -
