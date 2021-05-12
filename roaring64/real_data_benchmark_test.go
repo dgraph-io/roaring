@@ -12,14 +12,10 @@ import (
 	"testing"
 )
 
-// To run these benchmarks, type BENCH_REAL_DATA=1 go test -bench BenchmarkRealData -run -
-
-var benchRealData = false
-
 var realDatasets = []string{
 	"census-income_srt", "census-income", "census1881_srt", "census1881",
-	"dimension_003", "dimension_008", "dimension_033", "uscensus2000", "weather_sept_85_srt", "weather_sept_85",
-	"wikileaks-noquotes_srt", "wikileaks-noquotes",
+	"dimension_003", "dimension_008", "dimension_033", "uscensus2000", "weather_sept_85_srt",
+	"weather_sept_85", "wikileaks-noquotes_srt", "wikileaks-noquotes",
 }
 
 func init() {
@@ -35,19 +31,22 @@ func init() {
 func retrieveRealDataBitmaps(datasetName string, optimize bool) ([]*Bitmap, error) {
 	gopath, ok := os.LookupEnv("GOPATH")
 	if !ok {
-		return nil, fmt.Errorf("GOPATH not set. It's required to locate real-roaring-datasets. Set GOPATH or disable BENCH_REAL_DATA")
+		return nil, fmt.Errorf("GOPATH not set. It's required to locate real-roaring-datasets. " +
+			"Set GOPATH or disable BENCH_REAL_DATA")
 	}
 
 	basePath := path.Join(gopath, "src", "github.com", "RoaringBitmap", "real-roaring-datasets")
 
 	if _, err := os.Stat(basePath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("real-roaring-datasets does not exist. Run `go get github.com/RoaringBitmap/real-roaring-datasets`")
+		return nil, fmt.Errorf("real-roaring-datasets does not exist. " +
+			"Run `go get github.com/RoaringBitmap/real-roaring-datasets`")
 	}
 
 	datasetPath := path.Join(basePath, datasetName+".zip")
 
 	if _, err := os.Stat(datasetPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("dataset %s does not exist, tried path: %s", datasetName, datasetPath)
+		return nil, fmt.Errorf("dataset %s does not exist, tried path: %s",
+			datasetName, datasetPath)
 	}
 
 	zipFile, err := zip.OpenReader(datasetPath)
@@ -69,7 +68,8 @@ func retrieveRealDataBitmaps(datasetName string, optimize bool) ([]*Bitmap, erro
 	for i, f := range zipFile.File {
 		r, err := f.Open()
 		if err != nil {
-			return nil, fmt.Errorf("failed to read bitmap file %s from dataset %s, cause: %v", f.Name, datasetName, err)
+			return nil, fmt.Errorf("failed to read bitmap file %s from dataset %s, cause: %v",
+				f.Name, datasetName, err)
 		}
 
 		var totalReadBytes uint64
@@ -90,7 +90,8 @@ func retrieveRealDataBitmaps(datasetName string, optimize bool) ([]*Bitmap, erro
 				break
 			} else if err != nil {
 				r.Close()
-				return nil, fmt.Errorf("could not read content of file %s from dataset %s, cause: %v", f.Name, datasetName, err)
+				return nil, fmt.Errorf("could not read file %s for dataset %s, cause: %v",
+					f.Name, datasetName, err)
 			}
 		}
 
@@ -103,7 +104,8 @@ func retrieveRealDataBitmaps(datasetName string, optimize bool) ([]*Bitmap, erro
 			e, err := strconv.ParseUint(elemStr, 10, 32)
 			if err != nil {
 				r.Close()
-				return nil, fmt.Errorf("could not parse %s as uint32. Reading %s from %s. Cause: %v", elemStr, f.Name, datasetName, err)
+				return nil, fmt.Errorf("could not parse %s as uint32. Reading %s from %s. Err: %v",
+					elemStr, f.Name, datasetName, err)
 			}
 
 			b.Add(uint64(e))
@@ -115,15 +117,42 @@ func retrieveRealDataBitmaps(datasetName string, optimize bool) ([]*Bitmap, erro
 
 		bitmaps[i] = b
 	}
-
 	return bitmaps, nil
 }
 
-func benchmarkRealDataAggregate(b *testing.B, aggregator func(b []*Bitmap) uint64) {
-	if !benchRealData {
-		b.SkipNow()
+func getSerializedBitmaps(dataset string) ([][]byte, error) {
+	bms, err := retrieveRealDataBitmaps(dataset, false)
+	if err != nil {
+		return nil, err
 	}
+	var serialBms [][]byte
+	for _, b := range bms {
+		sbm, err := b.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+		serialBms = append(serialBms, sbm)
+	}
+	return serialBms, nil
+}
 
+func aggregateSerial(b *testing.B, aggregator func(b [][]byte)) {
+	for _, dataset := range realDatasets {
+		b.Run(dataset, func(b *testing.B) {
+			bitmaps, err := getSerializedBitmaps(dataset)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				aggregator(bitmaps)
+			}
+		})
+	}
+}
+
+func benchmarkRealDataAggregate(b *testing.B, aggregator func(b []*Bitmap) uint64) {
 	for _, dataset := range realDatasets {
 		b.Run(dataset, func(b *testing.B) {
 			bitmaps, err := retrieveRealDataBitmaps(dataset, true)
@@ -171,12 +200,20 @@ func BenchmarkRealDataNextMany(b *testing.B) {
 func BenchmarkRealDataParOr(b *testing.B) {
 	benchmarkRealDataAggregate(b, func(bitmaps []*Bitmap) uint64 {
 		return ParOr(0, bitmaps...).GetCardinality()
-		//return ParHeapOr(0, bitmaps...).GetCardinality()
 	})
 }
 
 func BenchmarkRealDataFastOr(b *testing.B) {
 	benchmarkRealDataAggregate(b, func(bitmaps []*Bitmap) uint64 {
 		return FastOr(bitmaps...).GetCardinality()
+	})
+}
+
+func BenchmarkRealDataFastOrSerial(b *testing.B) {
+	aggregateSerial(b, func(bitmaps [][]byte) {
+		_, err := FastOrSerial(bitmaps...)
+		if err != nil {
+			b.Fatal(err)
+		}
 	})
 }

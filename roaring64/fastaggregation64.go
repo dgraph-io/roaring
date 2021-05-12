@@ -34,3 +34,23 @@ func FastOr(bitmaps ...*Bitmap) *Bitmap {
 	//answer.repairAfterLazy()
 	return answer
 }
+
+func FastOrSerial(bitmaps ...[]byte) ([]byte, error) {
+	if len(bitmaps) == 0 {
+		return NewBitmap().MarshalBinary()
+	} else if len(bitmaps) == 1 {
+		return bitmaps[0], nil
+	}
+	answer, err := OrSerial(bitmaps[0], bitmaps[1])
+	if err != nil {
+		return answer, err
+	}
+	for _, bm := range bitmaps[2:] {
+		answer, err = OrSerial(answer, bm)
+		if err != nil {
+			return answer, err
+		}
+	}
+	return answer, nil
+
+}

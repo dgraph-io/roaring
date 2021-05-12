@@ -779,6 +779,20 @@ main:
 	rb.highlowcontainer.resize(intersectionsize)
 }
 
+func OrSerial(x1, x2 []byte) ([]byte, error) {
+	a := NewBitmap()
+	b := NewBitmap()
+
+	if err := a.UnmarshalBinary(x1); err != nil {
+		return nil, err
+	}
+	if err := b.UnmarshalBinary(x2); err != nil {
+		return nil, err
+	}
+	result := Or(a, b)
+	return result.MarshalBinary()
+}
+
 // Or computes the union between two bitmaps and returns the result
 func Or(x1, x2 *Bitmap) *Bitmap {
 	answer := NewBitmap()
