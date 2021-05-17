@@ -14,7 +14,7 @@ import (
 
 // To run these benchmarks, type BENCH_REAL_DATA=1 go test -bench BenchmarkRealData -run -
 
-var benchRealData = false
+var benchRealData = true
 
 var realDatasets = []string{
 	"census-income_srt", "census-income", "census1881_srt", "census1881",
@@ -22,15 +22,7 @@ var realDatasets = []string{
 	"wikileaks-noquotes_srt", "wikileaks-noquotes",
 }
 
-func init() {
-	if envStr, ok := os.LookupEnv("BENCH_REAL_DATA"); ok {
-		v, err := strconv.ParseBool(envStr)
-		if err != nil {
-			v = false
-		}
-		benchRealData = v
-	}
-}
+func init() {}
 
 func retrieveRealDataBitmaps(datasetName string, optimize bool) ([]*Bitmap, error) {
 	gopath, ok := os.LookupEnv("GOPATH")
